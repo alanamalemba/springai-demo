@@ -21,7 +21,7 @@ val additionalInstructions = """
 @RequestMapping("/api")
 class ChatController(
     private val chatClient: ChatClient,
-    @Value("classpath:/promptTemplates/userPromptTemplate.st") private val userPromptTemplate: Resource
+    @Value("classpath:/prompt-templates/user-prompt-template.st") private val userPromptTemplate: Resource
 ) {
 
     @GetMapping("/chat")
