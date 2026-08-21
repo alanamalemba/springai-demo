@@ -1,6 +1,8 @@
 package com.springai.demo.controller
 
 import org.springframework.ai.chat.client.ChatClient
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.io.Resource
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -17,14 +19,40 @@ val additionalInstructions = """
 
 @RestController
 @RequestMapping("/api")
-class ChatController(private val chatClient: ChatClient) {
+class ChatController(
+    private val chatClient: ChatClient,
+    @Value("classpath:/promptTemplates/userPromptTemplate.st") private val userPromptTemplate: Resource
+) {
 
     @GetMapping("/chat")
     fun chat(@RequestParam("message") message: String): String {
-        return chatClient.prompt().system {
-            it.param(
-                "additionalInstructions", additionalInstructions
-            )
-        }.user(message).call().content() ?: "No response"
+        return chatClient.prompt()
+            .system {
+                it.param(
+                    "additionalInstructions", additionalInstructions
+                )
+            }.user(message)
+            .call()
+            .content() ?: "No response"
+    }
+
+    @GetMapping("/email")
+    fun email(
+        @RequestParam("customerName") customerName: String,
+        @RequestParam("customerMessage") customerMessage: String
+    ): String {
+        return chatClient.prompt()
+            .system(
+                """
+            You are a professional customer service assistant which helps drafting email
+            responses to improve the productivity of the customer support team
+        """.trimIndent()
+            ).user { promptTemplateSpec ->
+                promptTemplateSpec.text(userPromptTemplate)
+                    .param("customerName", customerName)
+                    .param("customerMessage", customerMessage)
+            }
+            .call()
+            .content() ?: "No response"
     }
 }
