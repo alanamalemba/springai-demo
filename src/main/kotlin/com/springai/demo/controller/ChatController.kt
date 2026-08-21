@@ -21,38 +21,36 @@ val additionalInstructions = """
 @RequestMapping("/api")
 class ChatController(
     private val chatClient: ChatClient,
-    @Value("classpath:/prompt-templates/user-prompt-template.st") private val userPromptTemplate: Resource
+    @Value("classpath:/prompt-templates/user-prompt-template.st") private val userPromptTemplate: Resource,
+    @Value("classpath:/prompt-templates/system-prompt-template.st") private val systemPromptTemplate: Resource
 ) {
 
     @GetMapping("/chat")
     fun chat(@RequestParam("message") message: String): String {
-        return chatClient.prompt()
-            .system {
+        return chatClient.prompt().system {
                 it.param(
                     "additionalInstructions", additionalInstructions
                 )
-            }.user(message)
-            .call()
-            .content() ?: "No response"
+            }.user(message).call().content() ?: "No response"
     }
 
     @GetMapping("/email")
     fun email(
-        @RequestParam("customerName") customerName: String,
-        @RequestParam("customerMessage") customerMessage: String
+        @RequestParam("customerName") customerName: String, @RequestParam("customerMessage") customerMessage: String
     ): String {
-        return chatClient.prompt()
-            .system(
+        return chatClient.prompt().system(
                 """
             You are a professional customer service assistant which helps drafting email
             responses to improve the productivity of the customer support team
         """.trimIndent()
-            ).user { promptTemplateSpec ->
-                promptTemplateSpec.text(userPromptTemplate)
-                    .param("customerName", customerName)
+            ).user {
+                it.text(userPromptTemplate).param("customerName", customerName)
                     .param("customerMessage", customerMessage)
-            }
-            .call()
-            .content() ?: "No response"
+            }.call().content() ?: "No response"
+    }
+
+    @GetMapping("/prompt-stuffing")
+    fun promptStuffing(@RequestParam("message") message: String): String {
+        return chatClient.prompt().system(systemPromptTemplate).user(message).call().content() ?: "No response"
     }
 }
